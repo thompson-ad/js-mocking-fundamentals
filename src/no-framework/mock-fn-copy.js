@@ -2,25 +2,23 @@ const assert = require("assert");
 const thumbWar = require("../thumb-war");
 const utils = require("../utils");
 
-// this is a mockFn factory
+// this function accepts an implementation and returns a function that return that implementation with the arguments
+// it also keeps track of all the arguments that it's been called with so we can make an assertion on how that function has been called.
+
 function fn(impl = () => {}) {
+  // create our own mock function that takes any number of args
   const mockFn = (...args) => {
     mockFn.mock.calls.push(args);
+    // return the impl forwarding on the args
     return impl(...args);
   };
+
   mockFn.mock = { calls: [] };
-  mockFn.mockImplementation = (newImpl) => (impl = newImpl);
   return mockFn;
 }
 
-function spyOn(obj, prop) {
-  const originalValue = obj[prop];
-  obj[prop] = fn();
-  obj[prop].mockRestore = () => (obj[prop] = originalValue);
-}
-
-spyOn(utils, "getWinner");
-utils.getWinner.mockImplementation((p1, p2) => p1);
+const originalGetWinner = utils.getWinner;
+utils.getWinner = fn((p1, p2) => p1);
 
 const winner = thumbWar("Kent C. Dodds", "Ken Wheeler");
 assert.strictEqual(winner, "Kent C. Dodds");
@@ -30,4 +28,4 @@ assert.deepStrictEqual(utils.getWinner.mock.calls, [
 ]);
 
 // cleanup
-utils.getWinner.mockRestore();
+utils.getWinner = originalGetWinner;
